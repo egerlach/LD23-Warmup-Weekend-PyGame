@@ -69,15 +69,50 @@ class UpDownBox(MovingBox):
         
             
 class PlayerBox(UpDownBox):
-    def __init__(self, colour, initial_position, speed):
+    
+    def __init__(self, colour, initial_position, speed, screen):
         """Builds a Box sprite that responds to keyboard commands of the player
         
         @param colour - a list of RGB values for the colour of the box
         @param initial_position - a list of two values for the top left coordinate of the box
         @param speed - number of pixels per second that the box should move while a key is held down
         """
-        pass
+        MovingBox.__init__(self, colour, initial_position, speed)
         
+        self.direction = [0,0]
+        self.clamp_rect = screen.get_rect()
+        
+    def move(self):
+        self.rect.move_ip(*self.direction)
+        self.rect.clamp_ip(self.clamp_rect)
+    
+    def stop(self):
+        self.direction = [0,0]
+        
+    def up(self):
+        self.direction = [0, -1]
+    
+    def down(self):
+        self.direction = [0, 1]
+    
+    def left(self):
+        self.direction = [-1, 0]
+    
+    def right(self):
+        self.direction = [1, 0]
+        
+    def process_key(self, key):
+        if key == pygame.K_DOWN:
+            self.down()
+        elif key == pygame.K_UP:
+            self.up()
+        elif key == pygame.K_LEFT:
+            self.left()
+        elif key == pygame.K_RIGHT:
+            self.right()
+        else:
+            return False
+        return True
         
 def mainloop():        
     pygame.init()
@@ -98,10 +133,26 @@ def mainloop():
              UpDownBox([0,0,255], [180, 252], 300, 240)]:
         boxes.add(b)
         
+    player = PlayerBox([255,255,0], [200, 10], 100, screen)
+    boxes.add(player)
+    
+    keys_down = set()
+    arrow_keys = [pygame.K_DOWN, pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT]
+        
     while 1:
         for event in pygame.event.get():
             if event.type == pygame.QUIT: return
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE: return
+            elif event.type == pygame.KEYDOWN:
+                if player.process_key(event.key):
+                    if event.key in arrow_keys:
+                        keys_down.add(event.key)
+                else:
+                    if event.key == pygame.K_ESCAPE:
+                        return
+            elif event.type == pygame.KEYUP:
+                keys_down.remove(event.key)
+                if len(keys_down) == 0:
+                    player.stop()
             
         boxes.update(pygame.time.get_ticks())
         boxes.clear(screen, background)
