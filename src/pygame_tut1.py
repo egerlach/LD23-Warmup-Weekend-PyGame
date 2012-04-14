@@ -52,6 +52,8 @@ if __name__ == '__main__':
     framerate = 60
     
     screen = pygame.display.set_mode(size)
+    background = pygame.Surface(size)
+    background.fill([0,0,0])
     
     boxes = pygame.sprite.RenderUpdates()
     
@@ -65,9 +67,8 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT: sys.exit()
             if event.type == pygame.KEYDOWN: sys.exit()
             
-        screen.fill(black)
+        boxes.clear(screen, background)
         boxes.update(pygame.time.get_ticks(), 240)
-        for b in boxes.sprites():
-            screen.blit(b.image, b.rect)
+        boxes.draw(screen)
             
         pygame.display.flip()
