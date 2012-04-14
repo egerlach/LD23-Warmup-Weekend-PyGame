@@ -53,18 +53,21 @@ if __name__ == '__main__':
     
     screen = pygame.display.set_mode(size)
     
-    boxes = [Box([255,0,0], [0,0], 100),
-             Box([0,255,0], [60, 137], 25),
-             Box([0,0,255], [180, 252], 300)]
+    boxes = pygame.sprite.RenderUpdates()
     
+    for b in [Box([255,0,0], [0,0], 100),
+             Box([0,255,0], [60, 137], 25),
+             Box([0,0,255], [180, 252], 300)]:
+        boxes.add(b)
+        
     while 1:
         for event in pygame.event.get():
             if event.type == pygame.QUIT: sys.exit()
             if event.type == pygame.KEYDOWN: sys.exit()
             
         screen.fill(black)
-        for b in boxes:
-            b.update(pygame.time.get_ticks(), 240)
+        boxes.update(pygame.time.get_ticks(), 240)
+        for b in boxes.sprites():
             screen.blit(b.image, b.rect)
             
         pygame.display.flip()
