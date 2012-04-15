@@ -115,7 +115,10 @@ class PlayerBox(UpDownBox):
         self.rebound_last_tick = current_time + 1000
         
 def mainloop():        
+    pygame.mixer.pre_init()
     pygame.init()
+    pygame.mixer.quit()
+    pygame.mixer.init()
     
     size = width, height = 320, 240
     speed = [2,2]
@@ -128,6 +131,8 @@ def mainloop():
     
     enemies = pygame.sprite.RenderUpdates()
     boxes = pygame.sprite.RenderUpdates()
+    
+    boing = pygame.mixer.Sound("boink.wav")
     
     for b in [UpDownBox([255,0,0], [0,0], 100, 240),
              UpDownBox([0,255,0], [60, 137], 25, 240),
@@ -160,6 +165,7 @@ def mainloop():
         
         if pygame.sprite.spritecollideany(player, enemies):
             player.collided(pygame.time.get_ticks())            
+            boing.play()
         boxes.update(pygame.time.get_ticks())
         boxes.clear(screen, background)
         update_region = boxes.draw(screen)
