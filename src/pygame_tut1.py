@@ -70,6 +70,8 @@ class UpDownBox(MovingBox):
             
 class PlayerBox(UpDownBox):
     
+    key_map = { pygame.K_DOWN: [0, 1], pygame.K_UP: [0, -1], pygame.K_LEFT: [-1, 0], pygame.K_RIGHT: [1, 0] }
+    
     def __init__(self, colour, initial_position, speed, screen):
         """Builds a Box sprite that responds to keyboard commands of the player
         
@@ -80,39 +82,37 @@ class PlayerBox(UpDownBox):
         MovingBox.__init__(self, colour, initial_position, speed)
         
         self.direction = [0,0]
+        self.rebound = False
+        self.rebound_direction = [0,0]
+        self.rebound_last_tick = 0
         self.clamp_rect = screen.get_rect()
         
     def move(self):
-        self.rect.move_ip(*self.direction)
+        if self.rebound:
+            self.rect.move_ip(*self.rebound_direction)
+        else:
+            self.rect.move_ip(*self.direction)
+            
         self.rect.clamp_ip(self.clamp_rect)
+            
+    def update(self, current_time):
+        if self.rebound and self.rebound_last_tick < current_time:
+            self.rebound = False
+        MovingBox.update(self, current_time)
     
     def stop(self):
         self.direction = [0,0]
         
-    def up(self):
-        self.direction = [0, -1]
-    
-    def down(self):
-        self.direction = [0, 1]
-    
-    def left(self):
-        self.direction = [-1, 0]
-    
-    def right(self):
-        self.direction = [1, 0]
-        
     def process_key(self, key):
-        if key == pygame.K_DOWN:
-            self.down()
-        elif key == pygame.K_UP:
-            self.up()
-        elif key == pygame.K_LEFT:
-            self.left()
-        elif key == pygame.K_RIGHT:
-            self.right()
-        else:
-            return False
-        return True
+        if key in PlayerBox.key_map:
+            self.direction = PlayerBox.key_map[key]
+            return True
+        return False
+    
+    def collided(self, current_time):
+        self.rebound = True
+        self.rebound_direction = map(lambda x: (-x) * 2, self.direction)
+        self.rebound_last_tick = current_time + 1000
         
 def mainloop():        
     pygame.init()
@@ -124,22 +124,25 @@ def mainloop():
     
     screen = pygame.display.set_mode(size)
     background = pygame.Surface(size)
-    background.fill([0,0,0])
+    background.fill(black)
     
+    enemies = pygame.sprite.RenderUpdates()
     boxes = pygame.sprite.RenderUpdates()
     
     for b in [UpDownBox([255,0,0], [0,0], 100, 240),
              UpDownBox([0,255,0], [60, 137], 25, 240),
              UpDownBox([0,0,255], [180, 252], 300, 240)]:
-        boxes.add(b)
+        enemies.add(b)
         
+    boxes.add(enemies)
+    
     player = PlayerBox([255,255,0], [200, 10], 100, screen)
     boxes.add(player)
     
     keys_down = set()
     arrow_keys = [pygame.K_DOWN, pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT]
         
-    while 1:
+    while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT: return
             elif event.type == pygame.KEYDOWN:
@@ -150,15 +153,18 @@ def mainloop():
                     if event.key == pygame.K_ESCAPE:
                         return
             elif event.type == pygame.KEYUP:
-                keys_down.remove(event.key)
+                if event.key in keys_down:
+                    keys_down.remove(event.key)
                 if len(keys_down) == 0:
                     player.stop()
-            
+        
+        if pygame.sprite.spritecollideany(player, enemies):
+            player.collided(pygame.time.get_ticks())            
         boxes.update(pygame.time.get_ticks())
         boxes.clear(screen, background)
-        boxes.draw(screen)
+        update_region = boxes.draw(screen)
             
-        pygame.display.flip()
+        pygame.display.update(update_region)
 
 if __name__ == '__main__':
     mainloop()
